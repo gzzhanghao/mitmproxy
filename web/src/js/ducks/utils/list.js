@@ -26,9 +26,8 @@ export default function reduce(state = defaultState, action) {
             const data = [...state.data]
             const index = state.indexOf[action.id]
 
-            // FIXME: We should just swallow this
             if (index == null) {
-                throw new Error('Item not found')
+                return state
             }
 
             data[index] = action.item
@@ -45,9 +44,8 @@ export default function reduce(state = defaultState, action) {
             const indexOf = { ...state.indexOf }
             const index = indexOf[action.id]
 
-            // FIXME: We should just swallow this
             if (index == null) {
-                throw new Error('Item not found')
+                return state
             }
 
             data.splice(index, 1)

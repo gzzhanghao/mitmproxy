@@ -53,7 +53,7 @@ export default function reduce(state = defaultState, action) {
 
         case UPDATE: {
             if (state.indexOf[action.item.id] == null) {
-                return
+                return state
             }
             const nextState = {
                 ...state,
