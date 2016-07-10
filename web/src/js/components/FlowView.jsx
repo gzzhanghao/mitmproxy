@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import { connect } from 'react-redux'
 import _ from 'lodash'
 
 import Nav from './FlowView/Nav'
@@ -6,7 +7,9 @@ import { Request, Response, ErrorView as Error } from './FlowView/Messages'
 import Details from './FlowView/Details'
 import Prompt from './Prompt'
 
-export default class FlowView extends Component {
+import { setPanel } from '../ducks/ui'
+
+class FlowView extends Component {
 
     static allTabs = { Request, Response, Error, Details }
 
@@ -16,7 +19,6 @@ export default class FlowView extends Component {
         this.state = { prompt: false }
 
         this.closePrompt = this.closePrompt.bind(this)
-        this.selectTab = this.selectTab.bind(this)
     }
 
     getTabs() {
@@ -26,11 +28,7 @@ export default class FlowView extends Component {
     nextTab(increment) {
         const tabs = this.getTabs()
         // JS modulo operator doesn't correct negative numbers, make sure that we are positive.
-        this.selectTab(tabs[(tabs.indexOf(this.props.tab) + increment + tabs.length) % tabs.length])
-    }
-
-    selectTab(panel) {
-        this.props.updateLocation(`/flows/${this.props.flow.id}/${panel}`)
+        this.props.setPanel(tabs[(tabs.indexOf(this.props.tab) + increment + tabs.length) % tabs.length])
     }
 
     closePrompt(edit) {
@@ -95,7 +93,7 @@ export default class FlowView extends Component {
                     flow={flow}
                     tabs={tabs}
                     active={active}
-                    onSelectTab={this.selectTab}
+                    onSelectTab={this.props.setPanel}
                 />
                 <Tab ref={ tab => this.tabComponent = tab } flow={flow} updateFlow={updateFlow} />
                 {this.state.prompt && (
@@ -105,3 +103,10 @@ export default class FlowView extends Component {
         )
     }
 }
+
+export default connect(
+    state => ({}),
+    { setPanel },
+    undefined,
+    { withRef: true }
+)(FlowView)

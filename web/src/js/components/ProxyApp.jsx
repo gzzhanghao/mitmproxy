@@ -4,6 +4,7 @@ import _ from 'lodash'
 import { connect } from 'react-redux'
 
 import { init as appInit, destruct as appDestruct } from '../ducks/app'
+import { setSelectedInput } from '../ducks/ui'
 import Header from './Header'
 import EventLog from './EventLog'
 import Footer from './Footer'
@@ -24,7 +25,6 @@ class ProxyAppMain extends Component {
 
         this.focus = this.focus.bind(this)
         this.onKeyDown = this.onKeyDown.bind(this)
-        this.updateLocation = this.updateLocation.bind(this)
     }
 
     componentWillMount() {
@@ -42,11 +42,8 @@ class ProxyAppMain extends Component {
         this.props.appDestruct()
     }
 
-    /**
-     * @todo use props
-     */
-    getChildContext() {
-        return { returnFocus: this.focus }
+    componentWillReceiveProps(nextProps) {
+
     }
 
     /**
@@ -63,72 +60,35 @@ class ProxyAppMain extends Component {
      * @todo bind on window
      */
     onKeyDown(e) {
-        let name = null
-
         switch (e.keyCode) {
             case Key.I:
-                name = 'intercept'
+                this.props.setSelectedInput('intercept')
                 break
             case Key.L:
-                name = 'search'
+                this.props.setSelectedInput('search')
                 break
             case Key.H:
-                name = 'highlight'
+                this.props.setSelectedInput('highlight')
                 break
             default:
-                let main = this.refs.view
-                if (this.refs.view.refs.wrappedInstance) {
-                    main = this.refs.view.refs.wrappedInstance
-                }
+                let main = this.refs.view.refs.wrappedInstance || this.refs.view
                 if (main.onMainKeyDown) {
                     main.onMainKeyDown(e)
                 }
                 return // don't prevent default then
         }
 
-        if (name) {
-            const headerComponent = this.refs.header.refs.wrappedInstance || this.refs.header
-            headerComponent.setState({ active: Header.entries[0] }, () => {
-                const active = headerComponent.refs.active.refs.wrappedInstance || headerComponent.refs.active
-                active.refs[name].select()
-            })
-        }
-
         e.preventDefault()
-    }
-
-    /**
-     * @todo move to actions
-     */
-    updateLocation(pathname, queryUpdate) {
-        if (pathname === undefined) {
-            pathname = this.props.location.pathname
-        }
-        const query = this.props.location.query
-        for (const key of Object.keys(queryUpdate || {})) {
-            query[key] = queryUpdate[key] || undefined
-        }
-        this.context.router.replace({ pathname, query })
-    }
-
-    /**
-     * @todo pass in with props
-     */
-    getQuery() {
-        // For whatever reason, react-router always returns the same object, which makes comparing
-        // the current props with nextProps impossible. As a workaround, we just clone the query object.
-        return _.clone(this.props.location.query)
     }
 
     render() {
         const { showEventLog, location, children } = this.props
-        const query = this.getQuery()
         return (
             <div id="container" tabIndex="0" onKeyDown={this.onKeyDown}>
-                <Header ref="header" updateLocation={this.updateLocation} query={query} />
+                <Header ref="header"/>
                 {React.cloneElement(
                     children,
-                    { ref: 'view', location, query, updateLocation: this.updateLocation }
+                    { ref: 'view', location }
                 )}
                 {showEventLog && (
                     <EventLog key="eventlog"/>
@@ -143,9 +103,13 @@ export default connect(
     state => ({
         showEventLog: state.eventLog.visible,
         settings: state.settings.settings,
+        flowId: state.flows.views.main.selected[0],
+        panel: state.ui.panel,
+        query: state.ui.query
     }),
     {
         appInit,
         appDestruct,
+        setSelectedInput
     }
 )(ProxyAppMain)

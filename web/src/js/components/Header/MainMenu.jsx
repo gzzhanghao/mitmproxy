@@ -3,6 +3,7 @@ import { connect } from 'react-redux'
 import FilterInput from './FilterInput'
 import { Query } from '../../actions.js'
 import { update as updateSettings } from '../../ducks/settings'
+import { setSelectedInput, updateQuery } from '../../ducks/ui'
 
 class MainMenu extends Component {
 
@@ -12,7 +13,7 @@ class MainMenu extends Component {
     static propTypes = {
         query: PropTypes.object.isRequired,
         settings: PropTypes.object.isRequired,
-        updateLocation: PropTypes.func.isRequired,
+        updateQuery: PropTypes.func.isRequired,
         updateSettings: PropTypes.func.isRequired,
     }
 
@@ -22,12 +23,19 @@ class MainMenu extends Component {
         this.onHighlightChange = this.onHighlightChange.bind(this)
     }
 
+    componentDidUpdate() {
+        if(this.refs[this.props.selectedInput]) {
+            this.refs[this.props.selectedInput].select()
+        }
+        this.props.setSelectedInput(null)
+    }
+
     onSearchChange(val) {
-        this.props.updateLocation(undefined, { [Query.SEARCH]: val })
+        this.props.updateQuery({ [Query.SEARCH]: val })
     }
 
     onHighlightChange(val) {
-        this.props.updateLocation(undefined, { [Query.HIGHLIGHT]: val })
+        this.props.updateQuery({ [Query.HIGHLIGHT]: val })
     }
 
     render() {
@@ -70,9 +78,13 @@ class MainMenu extends Component {
 export default connect(
     state => ({
         settings: state.settings.settings,
+        selectedInput: state.ui.selectedInput,
+        query: state.ui.query
     }),
     {
         updateSettings,
+        updateQuery,
+        setSelectedInput
     },
     null,
     {

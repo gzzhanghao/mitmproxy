@@ -17,7 +17,7 @@ class Header extends Component {
     }
 
     render() {
-        const { updateLocation, query, selectedFlow, activeMenu} = this.props
+        const { selectedFlow, activeMenu} = this.props
 
         let entries = [...Header.entries]
         if(selectedFlow)
@@ -41,8 +41,6 @@ class Header extends Component {
                 <div className="menu">
                     <Active
                         ref="active"
-                        updateLocation={updateLocation}
-                        query={query}
                     />
                 </div>
             </header>

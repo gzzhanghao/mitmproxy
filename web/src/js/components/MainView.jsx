@@ -7,6 +7,7 @@ import FlowTable from './FlowTable'
 import FlowView from './FlowView'
 import * as flowsActions from '../ducks/flows'
 import { select as selectFlow, updateFilter, updateHighlight } from '../ducks/views/main'
+import { setPanel } from '../ducks/ui'
 
 class MainView extends Component {
 
@@ -15,31 +16,35 @@ class MainView extends Component {
         sort: PropTypes.object,
     }
 
+    static contextTypes = {
+        router: PropTypes.object.isRequired,
+    }
+
     /**
      * @todo move to actions
      * @todo replace with mapStateToProps
      */
     componentWillReceiveProps(nextProps) {
-        // Update redux store with route changes
-        if (nextProps.routeParams.flowId !== (nextProps.selectedFlow || {}).id) {
-            this.props.selectFlow(nextProps.routeParams.flowId)
+        if (this.props.flowId === nextProps.flowId && this.props.panel === nextProps.panel && this.props.query === nextProps.query) {
+            // Update redux store with route changes
+            if (nextProps.routeParams.flowId !== nextProps.flowId) {
+                this.props.selectFlow(nextProps.routeParams.flowId)
+            }
+            if (nextProps.routeParams.detailTab !== nextProps.panel) {
+                this.props.setPanel(nextProps.routeParams.detailTab)
+            }
+            if (nextProps.location.query[Query.SEARCH] !== nextProps.filter) {
+                this.props.updateFilter(nextProps.location.query[Query.SEARCH], false)
+            }
+            if (nextProps.location.query[Query.HIGHLIGHT] !== nextProps.highlight) {
+                this.props.updateHighlight(nextProps.location.query[Query.HIGHLIGHT], false)
+            }
+            return
         }
-        if (nextProps.location.query[Query.SEARCH] !== nextProps.filter) {
-            this.props.updateFilter(nextProps.location.query[Query.SEARCH], false)
-        }
-        if (nextProps.location.query[Query.HIGHLIGHT] !== nextProps.highlight) {
-            this.props.updateHighlight(nextProps.location.query[Query.HIGHLIGHT], false)
-        }
-    }
-
-    /**
-     * @todo move to actions
-     */
-    selectFlow(flow) {
-        if (flow) {
-            this.props.updateLocation(`/flows/${flow.id}/${this.props.routeParams.detailTab || 'request'}`)
+        if(nextProps.flowId) {
+            this.context.router.replace({ pathname: `/flows/${nextProps.flowId}/${nextProps.panel}` , query: nextProps.query})
         } else {
-            this.props.updateLocation('/flows')
+            this.context.router.replace({ pathname: '/flows' , query: nextProps.query})
         }
     }
 
@@ -59,7 +64,7 @@ class MainView extends Component {
                 flows.length - 1
             )
         }
-        this.selectFlow(flows[index])
+        this.props.selectFlow((flows[index] || {}).id)
     }
 
     /**
@@ -69,6 +74,10 @@ class MainView extends Component {
         var flow = this.props.selectedFlow
         if (e.ctrlKey) {
             return
+        }
+        let flowDetails = null
+        if(this.refs.flowDetails) {
+            flowDetails = this.refs.flowDetails.refs.wrappedInstance || this.refs.flowDetails
         }
         switch (e.keyCode) {
             case Key.K:
@@ -93,19 +102,19 @@ class MainView extends Component {
                 this.selectFlowRelative(-1e10)
                 break
             case Key.ESC:
-                this.selectFlow(null)
+                this.props.selectFlow(undefined)
                 break
             case Key.H:
             case Key.LEFT:
-                if (this.refs.flowDetails) {
-                    this.refs.flowDetails.nextTab(-1)
+                if (flowDetails) {
+                    flowDetails.nextTab(-1)
                 }
                 break
             case Key.L:
             case Key.TAB:
             case Key.RIGHT:
-                if (this.refs.flowDetails) {
-                    this.refs.flowDetails.nextTab(+1)
+                if (flowDetails) {
+                    flowDetails.nextTab(+1)
                 }
                 break
             case Key.C:
@@ -140,8 +149,8 @@ class MainView extends Component {
                 }
                 break
             case Key.E:
-                if (this.refs.flowDetails) {
-                    this.refs.flowDetails.promptEdit()
+                if (flowDetails) {
+                    flowDetails.promptEdit()
                 }
                 break
             case Key.SHIFT:
@@ -162,7 +171,7 @@ class MainView extends Component {
                     flows={flows}
                     selected={selectedFlow}
                     highlight={highlight}
-                    onSelect={flow => this.selectFlow(flow)}
+                    onSelect={flow => this.props.selectFlow(flow.id)}
                 />
                 {selectedFlow && [
                     <Splitter key="splitter"/>,
@@ -170,8 +179,6 @@ class MainView extends Component {
                         key="flowDetails"
                         ref="flowDetails"
                         tab={this.props.routeParams.detailTab}
-                        query={this.props.query}
-                        updateLocation={this.props.updateLocation}
                         updateFlow={data => this.props.updateFlow(selectedFlow, data)}
                         flow={selectedFlow}
                     />
@@ -186,12 +193,16 @@ export default connect(
         flows: state.flows.views.main.view.data,
         filter: state.flows.views.main.filter,
         highlight: state.flows.views.main.highlight,
-        selectedFlow: state.flows.list.byId[state.flows.views.main.selected[0]]
+        selectedFlow: state.flows.list.byId[state.flows.views.main.selected[0]],
+        panel: state.ui.panel,
+        flowId: state.flows.views.main.selected[0],
+        query: state.ui.query
     }),
     {
         selectFlow,
         updateFilter,
         updateHighlight,
+        setPanel,
         updateFlow: flowsActions.update,
         clearFlows: flowsActions.clear,
         duplicateFlow: flowsActions.duplicate,
