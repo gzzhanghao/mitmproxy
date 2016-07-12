@@ -17,12 +17,6 @@ class MainMenu extends Component {
         updateSettings: PropTypes.func.isRequired,
     }
 
-    constructor(props, context) {
-        super(props, context)
-        this.onSearchChange = this.onSearchChange.bind(this)
-        this.onHighlightChange = this.onHighlightChange.bind(this)
-    }
-
     componentDidUpdate() {
         if(this.refs[this.props.selectedInput]) {
             this.refs[this.props.selectedInput].select()
@@ -30,16 +24,8 @@ class MainMenu extends Component {
         this.props.setSelectedInput(null)
     }
 
-    onSearchChange(val) {
-        this.props.updateQuery({ [Query.SEARCH]: val })
-    }
-
-    onHighlightChange(val) {
-        this.props.updateQuery({ [Query.HIGHLIGHT]: val })
-    }
-
     render() {
-        const { query, settings, updateSettings } = this.props
+        const { query, settings, updateSettings, updateQuery } = this.props
 
         return (
             <div>
@@ -50,7 +36,7 @@ class MainMenu extends Component {
                         type="search"
                         color="black"
                         value={query[Query.SEARCH] || ''}
-                        onChange={this.onSearchChange}
+                        onChange={search => updateQuery({ [Query.SEARCH]: search })}
                     />
                     <FilterInput
                         ref="highlight"
@@ -58,7 +44,7 @@ class MainMenu extends Component {
                         type="tag"
                         color="hsl(48, 100%, 50%)"
                         value={query[Query.HIGHLIGHT] || ''}
-                        onChange={this.onHighlightChange}
+                        onChange={highlight => updateQuery({ [Query.HIGHLIGHT]: highlight })}
                     />
                     <FilterInput
                         ref="intercept"
