@@ -52,9 +52,9 @@ class MainView extends Component {
      * @todo move to actions
      */
     selectFlowRelative(shift) {
-        const { flows, routeParams, selectedFlow } = this.props
+        const { flows, flowId, selectedFlow } = this.props
         let index = 0
-        if (!routeParams.flowId) {
+        if (!flowId) {
             if (shift < 0) {
                 index = flows.length - 1
             }
