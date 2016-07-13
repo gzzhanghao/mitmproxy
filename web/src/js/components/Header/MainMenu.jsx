@@ -18,20 +18,20 @@ class MainMenu extends Component {
     }
 
     componentDidUpdate() {
-        if(this.refs[this.props.selectedInput]) {
-            this.refs[this.props.selectedInput].select()
+        if(this.props.selectedInput) {
+            this.props.setSelectedInput(null)
         }
-        this.props.setSelectedInput(null)
     }
 
     render() {
-        const { query, settings, updateSettings, updateQuery } = this.props
+        const { query, selectedInput, settings, updateSettings, updateQuery } = this.props
 
         return (
             <div>
                 <div className="menu-row">
                     <FilterInput
-                        ref="search"
+                        filterInputName="search"
+                        selectedInput={selectedInput}
                         placeholder="Search"
                         type="search"
                         color="black"
@@ -39,7 +39,8 @@ class MainMenu extends Component {
                         onChange={search => updateQuery({ [Query.SEARCH]: search })}
                     />
                     <FilterInput
-                        ref="highlight"
+                        filterInputName="highlight"
+                        selectedInput={selectedInput}
                         placeholder="Highlight"
                         type="tag"
                         color="hsl(48, 100%, 50%)"
@@ -47,7 +48,8 @@ class MainMenu extends Component {
                         onChange={highlight => updateQuery({ [Query.HIGHLIGHT]: highlight })}
                     />
                     <FilterInput
-                        ref="intercept"
+                        filterInputName="intercept"
+                        selectedInput={selectedInput}
                         placeholder="Intercept"
                         type="pause"
                         color="hsl(208, 56%, 53%)"

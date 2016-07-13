@@ -4,6 +4,7 @@ import classnames from 'classnames'
 import { Key } from '../../utils.js'
 import Filt from '../../filt/filt'
 import FilterDocs from './FilterDocs'
+import FocusHelper from '../helpers/Focus'
 
 export default class FilterInput extends Component {
 
@@ -82,20 +83,11 @@ export default class FilterInput extends Component {
 
     onKeyDown(e) {
         if (e.keyCode === Key.ESC || e.keyCode === Key.ENTER) {
-            this.blur()
+            document.activeElement.blur()
             // If closed using ESC/ENTER, hide the tooltip.
             this.setState({mousefocus: false})
         }
         e.stopPropagation()
-    }
-
-    blur() {
-        ReactDOM.findDOMNode(this.refs.input).blur()
-        this.context.returnFocus()
-    }
-
-    select() {
-        ReactDOM.findDOMNode(this.refs.input).select()
     }
 
     render() {
@@ -108,7 +100,7 @@ export default class FilterInput extends Component {
                 </span>
                 <input
                     type="text"
-                    ref="input"
+                    ref={FocusHelper(this.props.selectedInput === this.props.filterInputName)}
                     placeholder={placeholder}
                     className="form-control"
                     value={value}

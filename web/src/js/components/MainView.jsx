@@ -31,7 +31,7 @@ class MainView extends Component {
             if (nextProps.routeParams.flowId !== nextProps.flowId) {
                 this.props.selectFlow(nextProps.routeParams.flowId)
             }
-            if (nextProps.routeParams.detailTab !== nextProps.panel) {
+            if (nextProps.routeParams.flowId && nextProps.routeParams.detailTab !== nextProps.panel) {
                 this.props.setPanel(nextProps.routeParams.detailTab)
             }
             if (nextProps.location.query[Query.SEARCH] !== nextProps.filter) {

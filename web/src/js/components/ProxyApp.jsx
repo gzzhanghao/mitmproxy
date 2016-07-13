@@ -25,7 +25,6 @@ class ProxyAppMain extends Component {
     constructor(props, context) {
         super(props, context)
 
-        this.focus = this.focus.bind(this)
         this.onKeyDown = this.onKeyDown.bind(this)
     }
 
@@ -37,20 +36,12 @@ class ProxyAppMain extends Component {
      * @todo listen to window's key events
      */
     componentDidMount() {
-        this.focus()
+        window.addEventListener('keydown', this.onKeyDown)
     }
 
     componentWillUnmount() {
         this.props.appDestruct()
-    }
-
-    /**
-     * @todo remove it
-     */
-    focus() {
-        document.activeElement.blur()
-        window.getSelection().removeAllRanges()
-        ReactDOM.findDOMNode(this).focus()
+        window.removeEventListener('keydown', this.onKeyDown)
     }
 
     /**
@@ -152,7 +143,7 @@ class ProxyAppMain extends Component {
     render() {
         const { showEventLog, location, children } = this.props
         return (
-            <div id="container" tabIndex="0" onKeyDown={this.onKeyDown}>
+            <div id="container" tabIndex="0">
                 <Header ref="header"/>
                 {React.cloneElement(
                     children,
