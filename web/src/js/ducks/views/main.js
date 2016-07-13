@@ -170,6 +170,21 @@ export function select(id) {
     }
 }
 
+export function selectRelative(shift, flows, selectedFlow) {
+    let index = 0
+    if (!selectedFlow) {
+        if (shift < 0) {
+            index = flows.length - 1
+        }
+    } else {
+        index = Math.min(
+            Math.max(0, flows.indexOf(selectedFlow) + shift),
+            flows.length - 1
+        )
+    }
+    return select((flows[index] || {}).id)
+}
+
 /**
  * @private
  */

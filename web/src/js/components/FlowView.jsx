@@ -7,7 +7,7 @@ import { Request, Response, ErrorView as Error } from './FlowView/Messages'
 import Details from './FlowView/Details'
 import Prompt from './Prompt'
 
-import { setPanel } from '../ducks/ui'
+import { setPanel, setPromptOpen } from '../ducks/ui'
 
 class FlowView extends Component {
 
@@ -21,14 +21,11 @@ class FlowView extends Component {
         this.closePrompt = this.closePrompt.bind(this)
     }
 
-    getTabs() {
-        return ['request', 'response', 'error'].filter(k => this.props.flow[k]).concat(['details'])
-    }
-
-    nextTab(increment) {
-        const tabs = this.getTabs()
-        // JS modulo operator doesn't correct negative numbers, make sure that we are positive.
-        this.props.setPanel(tabs[(tabs.indexOf(this.props.tab) + increment + tabs.length) % tabs.length])
+    componentWillReceiveProps(nextProps) {
+        if (nextProps.promptOpen) {
+            this.promptEdit()
+            this.props.setPromptOpen(false)
+        }
     }
 
     closePrompt(edit) {
@@ -72,8 +69,8 @@ class FlowView extends Component {
     }
 
     render() {
-        const tabs = this.getTabs()
         let { flow, tab: active, updateFlow } = this.props
+        const tabs = ['request', 'response', 'error'].filter(k => flow[k]).concat(['details'])
 
         if (tabs.indexOf(active) < 0) {
             if (active === 'response' && flow.error) {
@@ -106,7 +103,7 @@ class FlowView extends Component {
 
 export default connect(
     state => ({}),
-    { setPanel },
+    { setPanel, setPromptOpen },
     undefined,
     { withRef: true }
 )(FlowView)

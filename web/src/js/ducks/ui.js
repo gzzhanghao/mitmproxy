@@ -4,12 +4,14 @@ export const SET_ACTIVE_MENU = 'SET_ACTIVE_MENU';
 export const SET_SELECTED_INPUT = 'SET_SELECTED_INPUT'
 export const UPDATE_QUERY = 'UPDATE_QUERY'
 export const SET_PANEL = 'SET_PANEL'
+export const SET_PROMPT_OPEN = 'SET_PROMPT_OPEN'
 
 const defaultState = {
     activeMenu: 'Start',
     selectedInput: null,
     query: {},
-    panel: 'request'
+    panel: 'request',
+    promptOpen: false
 }
 export default function reduce(state = defaultState, action) {
     switch (action.type) {
@@ -74,4 +76,16 @@ export function updateQuery(query) {
 
 export function setPanel(panel) {
     return { type: SET_PANEL, panel }
+}
+
+export function setPanelRelative(shift, selectedPanel, selectedFlow) {
+    if (!selectedFlow) {
+        return () => {}
+    }
+    const panels = ['request', 'response', 'error'].filter(k => selectedFlow[k]).concat(['details'])
+    return setPanel(panels[(panels.indexOf(selectedPanel) + shift + panels.length) % panels.length])
+}
+
+export function setPromptOpen(promptOpen) {
+    return { type: SET_PROMPT_OPEN, promptOpen }
 }

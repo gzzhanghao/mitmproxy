@@ -4,7 +4,9 @@ import _ from 'lodash'
 import { connect } from 'react-redux'
 
 import { init as appInit, destruct as appDestruct } from '../ducks/app'
-import { setSelectedInput } from '../ducks/ui'
+import { setSelectedInput, setPromptOpen, setPanelRelative } from '../ducks/ui'
+import { select as selectFlow, selectRelative as selectFlowRelative } from '../ducks/views/main'
+import * as flowsActions from '../ducks/flows'
 import Header from './Header'
 import EventLog from './EventLog'
 import Footer from './Footer'
@@ -42,10 +44,6 @@ class ProxyAppMain extends Component {
         this.props.appDestruct()
     }
 
-    componentWillReceiveProps(nextProps) {
-
-    }
-
     /**
      * @todo remove it
      */
@@ -60,6 +58,8 @@ class ProxyAppMain extends Component {
      * @todo bind on window
      */
     onKeyDown(e) {
+        let flow = this.props.selectedFlow
+        let panel = this.props.panel
         switch (e.keyCode) {
             case Key.I:
                 this.props.setSelectedInput('intercept')
@@ -70,12 +70,80 @@ class ProxyAppMain extends Component {
             case Key.H:
                 this.props.setSelectedInput('highlight')
                 break
-            default:
-                let main = this.refs.view.refs.wrappedInstance || this.refs.view
-                if (main.onMainKeyDown) {
-                    main.onMainKeyDown(e)
+            case Key.K:
+            case Key.UP:
+                this.props.selectFlowRelative(-1, this.props.flows, flow)
+                break
+            case Key.J:
+            case Key.DOWN:
+                this.props.selectFlowRelative(+1, this.props.flows, flow)
+                break
+            case Key.SPACE:
+            case Key.PAGE_DOWN:
+                this.props.selectFlowRelative(+10, this.props.flows, flow)
+                break
+            case Key.PAGE_UP:
+                this.props.selectFlowRelative(-10, this.props.flows, flow)
+                break
+            case Key.END:
+                this.props.selectFlowRelative(+1e10, this.props.flows, flow)
+                break
+            case Key.HOME:
+                this.props.selectFlowRelative(-1e10, this.props.flows, flow)
+                break
+            case Key.ESC:
+                this.props.selectFlow(undefined)
+                break
+            case Key.H:
+            case Key.LEFT:
+                this.props.setPanelRelative(-1, panel, flow)
+                break
+            case Key.L:
+            case Key.TAB:
+            case Key.RIGHT:
+                this.props.setPanelRelative(+1, panel, flow)
+                break
+            case Key.C:
+                if (e.shiftKey) {
+                    this.props.clearFlows()
                 }
-                return // don't prevent default then
+                break
+            case Key.D:
+                if (flow) {
+                    if (e.shiftKey) {
+                        this.props.duplicateFlow(flow)
+                    } else {
+                        this.props.removeFlow(flow)
+                    }
+                }
+                break
+            case Key.A:
+                if (e.shiftKey) {
+                    this.props.acceptAllFlows()
+                } else if (flow && flow.intercepted) {
+                    this.props.acceptFlow(flow)
+                }
+                break
+            case Key.R:
+                if (!e.shiftKey && flow) {
+                    this.props.replayFlow(flow)
+                }
+                break
+            case Key.V:
+                if (e.shiftKey && flow && flow.modified) {
+                    this.props.revertFlow(flow)
+                }
+                break
+            case Key.E:
+                if (flow) {
+                    this.props.setPromptOpen(true)
+                }
+                break
+            case Key.SHIFT:
+                break
+            default:
+                console.debug('keydown', e.keyCode)
+                return
         }
 
         e.preventDefault()
@@ -103,13 +171,24 @@ export default connect(
     state => ({
         showEventLog: state.eventLog.visible,
         settings: state.settings.settings,
-        flowId: state.flows.views.main.selected[0],
-        panel: state.ui.panel,
-        query: state.ui.query
+        selectedFlow: state.flows.list.byId[state.flows.views.main.selected[0]],
+        flows: state.flows.views.main.view.data,
+        panel: state.ui.panel
     }),
     {
         appInit,
         appDestruct,
-        setSelectedInput
+        setSelectedInput,
+        selectFlow,
+        selectFlowRelative,
+        setPromptOpen,
+        setPanelRelative,
+        clearFlows: flowsActions.clear,
+        duplicateFlow: flowsActions.duplicate,
+        removeFlow: flowsActions.remove,
+        acceptAllFlows: flowsActions.acceptAll,
+        acceptFlow: flowsActions.accept,
+        replayFlow: flowsActions.replay,
+        revertFlow: flowsActions.revert
     }
 )(ProxyAppMain)

@@ -8,6 +8,7 @@ import FlowView from './FlowView'
 import * as flowsActions from '../ducks/flows'
 import { select as selectFlow, updateFilter, updateHighlight } from '../ducks/views/main'
 import { setPanel } from '../ducks/ui'
+import { update as updateFlow } from '../ducks/flows'
 
 class MainView extends Component {
 
@@ -48,120 +49,6 @@ class MainView extends Component {
         }
     }
 
-    /**
-     * @todo move to actions
-     */
-    selectFlowRelative(shift) {
-        const { flows, flowId, selectedFlow } = this.props
-        let index = 0
-        if (!flowId) {
-            if (shift < 0) {
-                index = flows.length - 1
-            }
-        } else {
-            index = Math.min(
-                Math.max(0, flows.indexOf(selectedFlow) + shift),
-                flows.length - 1
-            )
-        }
-        this.props.selectFlow((flows[index] || {}).id)
-    }
-
-    /**
-     * @todo move to actions
-     */
-    onMainKeyDown(e) {
-        var flow = this.props.selectedFlow
-        if (e.ctrlKey) {
-            return
-        }
-        let flowDetails = null
-        if(this.refs.flowDetails) {
-            flowDetails = this.refs.flowDetails.refs.wrappedInstance || this.refs.flowDetails
-        }
-        switch (e.keyCode) {
-            case Key.K:
-            case Key.UP:
-                this.selectFlowRelative(-1)
-                break
-            case Key.J:
-            case Key.DOWN:
-                this.selectFlowRelative(+1)
-                break
-            case Key.SPACE:
-            case Key.PAGE_DOWN:
-                this.selectFlowRelative(+10)
-                break
-            case Key.PAGE_UP:
-                this.selectFlowRelative(-10)
-                break
-            case Key.END:
-                this.selectFlowRelative(+1e10)
-                break
-            case Key.HOME:
-                this.selectFlowRelative(-1e10)
-                break
-            case Key.ESC:
-                this.props.selectFlow(undefined)
-                break
-            case Key.H:
-            case Key.LEFT:
-                if (flowDetails) {
-                    flowDetails.nextTab(-1)
-                }
-                break
-            case Key.L:
-            case Key.TAB:
-            case Key.RIGHT:
-                if (flowDetails) {
-                    flowDetails.nextTab(+1)
-                }
-                break
-            case Key.C:
-                if (e.shiftKey) {
-                    this.props.clearFlows()
-                }
-                break
-            case Key.D:
-                if (flow) {
-                    if (e.shiftKey) {
-                        this.props.duplicateFlow(flow)
-                    } else {
-                        this.props.removeFlow(flow)
-                    }
-                }
-                break
-            case Key.A:
-                if (e.shiftKey) {
-                    this.props.acceptAllFlows()
-                } else if (flow && flow.intercepted) {
-                    this.props.acceptFlow(flow)
-                }
-                break
-            case Key.R:
-                if (!e.shiftKey && flow) {
-                    this.props.replayFlow(flow)
-                }
-                break
-            case Key.V:
-                if (e.shiftKey && flow && flow.modified) {
-                    this.props.revertFlow(flow)
-                }
-                break
-            case Key.E:
-                if (flowDetails) {
-                    flowDetails.promptEdit()
-                }
-                break
-            case Key.SHIFT:
-                break
-            default:
-                console.debug('keydown', e.keyCode)
-                return
-        }
-        e.preventDefault()
-    }
-
     render() {
         const { flows, selectedFlow, highlight } = this.props
         return (
@@ -191,9 +78,9 @@ class MainView extends Component {
 export default connect(
     state => ({
         flows: state.flows.views.main.view.data,
+        selectedFlow: state.flows.list.byId[state.flows.views.main.selected[0]],
         filter: state.flows.views.main.filter,
         highlight: state.flows.views.main.highlight,
-        selectedFlow: state.flows.list.byId[state.flows.views.main.selected[0]],
         panel: state.ui.panel,
         flowId: state.flows.views.main.selected[0],
         query: state.ui.query
@@ -203,14 +90,7 @@ export default connect(
         updateFilter,
         updateHighlight,
         setPanel,
-        updateFlow: flowsActions.update,
-        clearFlows: flowsActions.clear,
-        duplicateFlow: flowsActions.duplicate,
-        removeFlow: flowsActions.remove,
-        acceptAllFlows: flowsActions.acceptAll,
-        acceptFlow: flowsActions.accept,
-        replayFlow: flowsActions.replay,
-        revertFlow: flowsActions.revert,
+        updateFlow,
     },
     undefined,
     { withRef: true }
