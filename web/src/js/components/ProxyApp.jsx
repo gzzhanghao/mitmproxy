@@ -4,7 +4,7 @@ import _ from 'lodash'
 import { connect } from 'react-redux'
 
 import { init as appInit, destruct as appDestruct } from '../ducks/app'
-import { setSelectedInput, setPromptOpen, setPanelRelative } from '../ducks/ui'
+import { setSelectedInput, openPrompt, setPanelRelative } from '../ducks/ui'
 import { select as selectFlow, selectRelative as selectFlowRelative } from '../ducks/views/main'
 import * as flowsActions from '../ducks/flows'
 import Header from './Header'
@@ -13,10 +13,6 @@ import Footer from './Footer'
 import { Key } from '../utils.js'
 
 class ProxyAppMain extends Component {
-
-    static childContextTypes = {
-        returnFocus: PropTypes.func.isRequired,
-    }
 
     static contextTypes = {
         router: PropTypes.object.isRequired,
@@ -127,7 +123,7 @@ class ProxyAppMain extends Component {
                 break
             case Key.E:
                 if (flow) {
-                    this.props.setPromptOpen(true)
+                    this.props.openPrompt(true)
                 }
                 break
             case Key.SHIFT:
@@ -172,7 +168,7 @@ export default connect(
         setSelectedInput,
         selectFlow,
         selectFlowRelative,
-        setPromptOpen,
+        openPrompt,
         setPanelRelative,
         clearFlows: flowsActions.clear,
         duplicateFlow: flowsActions.duplicate,

@@ -6,7 +6,12 @@ export default shouldFocus => {
     }
     return ref => {
         if(ref) {
-            ReactDOM.findDOMNode(ref).select()
+            let node = ReactDOM.findDOMNode(ref)
+            if(node.select) {
+                node.select()
+            } else {
+                node.focus()
+            }
         }
     }
 }

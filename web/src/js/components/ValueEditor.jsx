@@ -14,23 +14,14 @@ export default class ValueEditor extends Component {
         inline: PropTypes.bool,
     }
 
-    constructor(props) {
-        super(props)
-        this.focus = this.focus.bind(this)
-    }
-
     render() {
         var tag = this.props.inline ? "span" : 'div'
         return (
             <ValidateEditor
                 {...this.props}
-                onStop={() => this.context.returnFocus()}
+                onStop={() => document.activeElement.blur()}
                 tag={tag}
             />
         )
-    }
-
-    focus() {
-        ReactDOM.findDOMNode(this).focus();
     }
 }

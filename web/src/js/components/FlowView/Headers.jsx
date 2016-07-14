@@ -2,15 +2,12 @@ import React, { Component, PropTypes } from 'react'
 import ReactDOM from 'react-dom'
 import ValueEditor from '../ValueEditor'
 import { Key } from '../../utils.js'
+import FocusHelper from '../helpers/Focus'
 
 class HeaderEditor extends Component {
 
     render() {
         return <ValueEditor ref="input" {...this.props} onKeyDown={this.onKeyDown} inline/>
-    }
-
-    focus() {
-        ReactDOM.findDOMNode(this).focus()
     }
 
     onKeyDown(e) {
@@ -59,10 +56,6 @@ export default class Headers extends Component {
         this.props.onChange(nextHeaders)
     }
 
-    edit() {
-        this.refs['0-key'].focus()
-    }
-
     onTab(row, col, e) {
         const headers = this.props.message.headers
 
@@ -96,7 +89,7 @@ export default class Headers extends Component {
     }
 
     render() {
-        const { message } = this.props
+        const { message, edit } = this.props
 
         return (
             <table className="header-table">
@@ -105,7 +98,7 @@ export default class Headers extends Component {
                         <tr key={i}>
                             <td className="header-name">
                                 <HeaderEditor
-                                    ref={`${i}-key`}
+                                    ref={FocusHelper(i === 0 && 'headers' === edit)}
                                     content={header[0]}
                                     onDone={val => this.onChange(i, 0, val)}
                                     onRemove={event => this.onRemove(i, 0, event)}

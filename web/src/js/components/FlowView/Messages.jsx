@@ -6,23 +6,24 @@ import { Key, formatTimeStamp } from '../../utils.js'
 import ContentView from '../ContentView'
 import ValueEditor from '../ValueEditor'
 import Headers from './Headers'
+import FocusHelper from '../helpers/Focus'
 
 class RequestLine extends Component {
 
     render() {
-        const { flow, updateFlow } = this.props
+        const { flow, updateFlow, edit } = this.props
 
         return (
             <div className="first-line request-line">
                 <ValueEditor
-                    ref="method"
+                    ref={FocusHelper('method' === edit)}
                     content={flow.request.method}
                     onDone={method => updateFlow({ request: { method } })}
                     inline
                 />
                 &nbsp;
                 <ValueEditor
-                    ref="url"
+                    ref={FocusHelper('url' === edit)}
                     content={RequestUtils.pretty_url(flow.request)}
                     onDone={url => updateFlow({ request: Object.assign({ path: '' }, parseUrl(url)) })}
                     isValid={url => !!parseUrl(url).host}
@@ -30,7 +31,7 @@ class RequestLine extends Component {
                 />
                 &nbsp;
                 <ValueEditor
-                    ref="httpVersion"
+                    ref={FocusHelper('httpVersion' === edit)}
                     content={flow.request.http_version}
                     onDone={ver => updateFlow({ request: { http_version: parseHttpVersion(ver) } })}
                     isValid={isValidHttpVersion}
@@ -44,12 +45,12 @@ class RequestLine extends Component {
 class ResponseLine extends Component {
 
     render() {
-        const { flow, updateFlow } = this.props
+        const { flow, updateFlow, edit } = this.props
 
         return (
             <div className="first-line response-line">
                 <ValueEditor
-                    ref="httpVersion"
+                    ref={FocusHelper('httpVersion' === edit)}
                     content={flow.response.http_version}
                     onDone={nextVer => updateFlow({ response: { http_version: parseHttpVersion(nextVer) } })}
                     isValid={isValidHttpVersion}
@@ -57,7 +58,7 @@ class ResponseLine extends Component {
                 />
                 &nbsp;
                 <ValueEditor
-                    ref="code"
+                    ref={FocusHelper('code' === edit)}
                     content={flow.response.status_code + ''}
                     onDone={code => updateFlow({ response: { code: parseInt(code) } })}
                     isValid={code => /^\d+$/.test(code)}
@@ -65,7 +66,7 @@ class ResponseLine extends Component {
                 />
                 &nbsp;
                 <ValueEditor
-                    ref="msg"
+                    ref={FocusHelper('msg' === edit)}
                     content={flow.response.reason}
                     onDone={msg => updateFlow({ response: { msg } })}
                     inline
@@ -77,79 +78,57 @@ class ResponseLine extends Component {
 
 export class Request extends Component {
 
+    static keys = {
+        m: 'method',
+        u: 'url',
+        v: 'httpVersion',
+        h: 'headers'
+    }
+
     render() {
-        const { flow, updateFlow } = this.props
+        const { flow, updateFlow, edit } = this.props
 
         return (
             <section className="request">
-                <RequestLine ref="requestLine" flow={flow} updateFlow={updateFlow} />
+                <RequestLine ref="requestLine" flow={flow} updateFlow={updateFlow} edit={Request.keys[edit]} />
                 <Headers
                     ref="headers"
                     message={flow.request}
                     onChange={headers => updateFlow({ request: { headers } })}
+                    edit={Request.keys[edit]}
                 />
                 <hr/>
                 <ContentView flow={flow} message={flow.request}/>
             </section>
         )
     }
-
-    edit(k) {
-        switch (k) {
-            case 'm':
-                this.refs.requestLine.refs.method.focus()
-                break
-            case 'u':
-                this.refs.requestLine.refs.url.focus()
-                break
-            case 'v':
-                this.refs.requestLine.refs.httpVersion.focus()
-                break
-            case 'h':
-                this.refs.headers.edit()
-                break
-            default:
-                throw new Error(`Unimplemented: ${k}`)
-        }
-    }
 }
 
 export class Response extends Component {
 
+    static keys = {
+        c: 'status_code',
+        m: 'msg',
+        v: 'httpVersion',
+        h: 'headers'
+    }
+
     render() {
-        const { flow, updateFlow } = this.props
+        const { flow, updateFlow, edit } = this.props
 
         return (
             <section className="response">
-                <ResponseLine ref="responseLine" flow={flow} updateFlow={updateFlow} />
+                <ResponseLine ref="responseLine" flow={flow} updateFlow={updateFlow} edit={Response.keys[edit]} />
                 <Headers
                     ref="headers"
                     message={flow.response}
                     onChange={headers => updateFlow({ response: { headers } })}
+                    edit={Response.keys[edit]}
                 />
                 <hr/>
                 <ContentView flow={flow} message={flow.response}/>
             </section>
         )
-    }
-
-    edit(k) {
-        switch (k) {
-            case 'c':
-                this.refs.responseLine.refs.status_code.focus()
-                break
-            case 'm':
-                this.refs.responseLine.refs.msg.focus()
-                break
-            case 'v':
-                this.refs.responseLine.refs.httpVersion.focus()
-                break
-            case 'h':
-                this.refs.headers.edit()
-                break
-            default:
-                throw new Error(`'Unimplemented: ${k}`)
-        }
     }
 }
 

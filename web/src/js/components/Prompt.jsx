@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import _ from 'lodash'
 
 import {Key} from '../utils.js'
+import FocusHelper from './helpers/Focus'
 
 Prompt.contextTypes = {
     returnFocus: PropTypes.func
@@ -14,7 +15,7 @@ Prompt.propTypes = {
     prompt: PropTypes.string,
 }
 
-export default function Prompt({ prompt, done, options }, context) {
+export default function Prompt({ prompt, done, options }) {
     const opts = []
 
     function keyTaken(k) {
@@ -35,7 +36,7 @@ export default function Prompt({ prompt, done, options }, context) {
         }
         opts.push(opt)
     }
-    
+
     function onKeyDown(event) {
         event.stopPropagation()
         event.preventDefault()
@@ -44,11 +45,10 @@ export default function Prompt({ prompt, done, options }, context) {
             return
         }
         done(key.key || false)
-        context.returnFocus()
     }
 
     return (
-        <div tabIndex="0" onKeyDown={onKeyDown} className="prompt-dialog">
+        <div ref={FocusHelper(true)} tabIndex="0" onKeyDown={onKeyDown} className="prompt-dialog">
             <div className="prompt-content">
             {prompt || <strong>Select: </strong> }
             {opts.map(opt => {

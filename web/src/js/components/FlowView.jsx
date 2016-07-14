@@ -7,69 +7,20 @@ import { Request, Response, ErrorView as Error } from './FlowView/Messages'
 import Details from './FlowView/Details'
 import Prompt from './Prompt'
 
-import { setPanel, setPromptOpen } from '../ducks/ui'
+import { setPanel, setPromptOpen, openPrompt, closePrompt, setEditType } from '../ducks/ui'
 
 class FlowView extends Component {
 
     static allTabs = { Request, Response, Error, Details }
 
-    constructor(props, context) {
-        super(props, context)
-
-        this.state = { prompt: false }
-
-        this.closePrompt = this.closePrompt.bind(this)
-    }
-
-    componentWillReceiveProps(nextProps) {
-        if (nextProps.promptOpen) {
-            this.promptEdit()
-            this.props.setPromptOpen(false)
+    componentDidUpdate() {
+        if(this.props.edit) {
+            this.props.setEditType(null)
         }
-    }
-
-    closePrompt(edit) {
-        this.setState({ prompt: false })
-        if (edit && this.tabComponent) {
-            this.tabComponent.edit(edit)
-        }
-    }
-
-    promptEdit() {
-        let options
-
-        switch (this.props.tab) {
-
-            case 'request':
-                options = [
-                    'method',
-                    'url',
-                    { text: 'http version', key: 'v' },
-                    'header'
-                ]
-                break
-
-            case 'response':
-                options = [
-                    { text: 'http version', key: 'v' },
-                    'code',
-                    'message',
-                    'header'
-                ]
-                break
-
-            case 'details':
-                return
-
-            default:
-                throw 'Unknown tab for edit: ' + this.props.tab
-        }
-
-        this.setState({ prompt: { options, done: this.closePrompt } })
     }
 
     render() {
-        let { flow, tab: active, updateFlow } = this.props
+        let { flow, tab: active, updateFlow, closePrompt, setEditType } = this.props
         const tabs = ['request', 'response', 'error'].filter(k => flow[k]).concat(['details'])
 
         if (tabs.indexOf(active) < 0) {
@@ -92,9 +43,14 @@ class FlowView extends Component {
                     active={active}
                     onSelectTab={this.props.setPanel}
                 />
-                <Tab ref={ tab => this.tabComponent = tab } flow={flow} updateFlow={updateFlow} />
-                {this.state.prompt && (
-                    <Prompt {...this.state.prompt}/>
+                <Tab edit={this.props.edit} flow={flow} updateFlow={updateFlow} />
+                {this.props.prompt && (
+                    <Prompt
+                        options={this.props.prompt}
+                        done={ edit => {
+                            closePrompt()
+                            setEditType(edit) }}
+                    />
                 )}
             </div>
         )
@@ -102,8 +58,17 @@ class FlowView extends Component {
 }
 
 export default connect(
-    state => ({}),
-    { setPanel, setPromptOpen },
+    state => ({
+        prompt: state.ui.prompt,
+        edit: state.ui.editType
+    }),
+    {
+        setPanel,
+        setPromptOpen,
+        openPrompt,
+        closePrompt,
+        setEditType
+    },
     undefined,
     { withRef: true }
 )(FlowView)

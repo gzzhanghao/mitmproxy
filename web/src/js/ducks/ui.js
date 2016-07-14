@@ -4,15 +4,34 @@ export const SET_ACTIVE_MENU = 'SET_ACTIVE_MENU';
 export const SET_SELECTED_INPUT = 'SET_SELECTED_INPUT'
 export const UPDATE_QUERY = 'UPDATE_QUERY'
 export const SET_PANEL = 'SET_PANEL'
-export const SET_PROMPT_OPEN = 'SET_PROMPT_OPEN'
+export const OPEN_PROMPT = 'OPEN_PROMPT'
+export const CLOSE_PROMPT = 'CLOSE_PROMPT'
+export const SET_EDIT_TYPE = 'SET_EDIT_TYPE'
 
 const defaultState = {
     activeMenu: 'Start',
     selectedInput: null,
     query: {},
     panel: 'request',
-    promptOpen: false
+    prompt: false,
+    editType: null
 }
+
+const promptOptions = {
+    request: [
+        'method',
+        'url',
+        { text: 'http version', key: 'v' },
+        'header'
+    ],
+    response: [
+        { text: 'http version', key: 'v' },
+        'code',
+        'message',
+        'header'
+    ]
+}
+
 export default function reduce(state = defaultState, action) {
     switch (action.type) {
         case SET_ACTIVE_MENU:
@@ -57,6 +76,24 @@ export default function reduce(state = defaultState, action) {
                 panel: action.panel
             }
 
+        case OPEN_PROMPT:
+            return {
+                ...state,
+                prompt: promptOptions[state.panel] || false
+            }
+
+        case CLOSE_PROMPT:
+            return {
+                ...state,
+                prompt: false
+            }
+
+        case SET_EDIT_TYPE:
+            return {
+                ...state,
+                editType: action.editType
+            }
+
         default:
             return state
     }
@@ -86,6 +123,14 @@ export function setPanelRelative(shift, selectedPanel, selectedFlow) {
     return setPanel(panels[(panels.indexOf(selectedPanel) + shift + panels.length) % panels.length])
 }
 
-export function setPromptOpen(promptOpen) {
-    return { type: SET_PROMPT_OPEN, promptOpen }
+export function openPrompt() {
+    return { type: OPEN_PROMPT }
+}
+
+export function closePrompt() {
+    return { type: CLOSE_PROMPT }
+}
+
+export function setEditType(editType) {
+    return { type: SET_EDIT_TYPE, editType }
 }
