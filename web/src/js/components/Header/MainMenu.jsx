@@ -3,7 +3,8 @@ import { connect } from 'react-redux'
 import FilterInput from './FilterInput'
 import { Query } from '../../actions.js'
 import { update as updateSettings } from '../../ducks/settings'
-import { setSelectedInput, updateQuery } from '../../ducks/ui'
+import { setSelectedInput } from '../../ducks/ui'
+import { updateFilter, updateHighlight } from '../../ducks/views/main'
 
 class MainMenu extends Component {
 
@@ -11,9 +12,11 @@ class MainMenu extends Component {
     static route = 'flows'
 
     static propTypes = {
-        query: PropTypes.object.isRequired,
+        filter: PropTypes.string,
+        highlight: PropTypes.string,
         settings: PropTypes.object.isRequired,
-        updateQuery: PropTypes.func.isRequired,
+        updateFilter: PropTypes.func.isRequired,
+        updateHighlight: PropTypes.func.isRequired,
         updateSettings: PropTypes.func.isRequired,
     }
 
@@ -24,7 +27,7 @@ class MainMenu extends Component {
     }
 
     render() {
-        const { query, selectedInput, settings, updateSettings, updateQuery } = this.props
+        const { filter, highlight, selectedInput, settings, flowList, updateSettings, updateFilter, updateHighlight } = this.props
 
         return (
             <div>
@@ -35,8 +38,8 @@ class MainMenu extends Component {
                         placeholder="Search"
                         type="search"
                         color="black"
-                        value={query[Query.SEARCH] || ''}
-                        onChange={search => updateQuery({ [Query.SEARCH]: search })}
+                        value={filter || ''}
+                        onChange={search => updateFilter(search, flowList)}
                     />
                     <FilterInput
                         filterInputName="highlight"
@@ -44,8 +47,8 @@ class MainMenu extends Component {
                         placeholder="Highlight"
                         type="tag"
                         color="hsl(48, 100%, 50%)"
-                        value={query[Query.HIGHLIGHT] || ''}
-                        onChange={highlight => updateQuery({ [Query.HIGHLIGHT]: highlight })}
+                        value={highlight || ''}
+                        onChange={highlight => updateHighlight(highlight)}
                     />
                     <FilterInput
                         filterInputName="intercept"
@@ -65,14 +68,17 @@ class MainMenu extends Component {
 
 export default connect(
     state => ({
+        flowList: state.flows.list,
         settings: state.settings.settings,
         selectedInput: state.ui.selectedInput,
-        query: state.ui.query
+        filter: state.flows.views.main.filter,
+        highlight: state.flows.views.main.highlight,
     }),
     {
         updateSettings,
-        updateQuery,
-        setSelectedInput
+        setSelectedInput,
+        updateFilter,
+        updateHighlight
     },
     null,
     {

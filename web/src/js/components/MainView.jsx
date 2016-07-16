@@ -1,4 +1,5 @@
 import React, { Component, PropTypes } from 'react'
+import _ from 'lodash'
 import { connect } from 'react-redux'
 import { Query } from '../actions.js'
 import { Key } from '../utils.js'
@@ -9,6 +10,7 @@ import * as flowsActions from '../ducks/flows'
 import { select as selectFlow, updateFilter, updateHighlight } from '../ducks/views/main'
 import { setPanel } from '../ducks/ui'
 import { update as updateFlow } from '../ducks/flows'
+import { deepEquals } from '../utils'
 
 class MainView extends Component {
 
@@ -21,31 +23,42 @@ class MainView extends Component {
         router: PropTypes.object.isRequired,
     }
 
-    /**
-     * @todo move to actions
-     * @todo replace with mapStateToProps
-     */
     componentWillReceiveProps(nextProps) {
-        if (this.props.flowId === nextProps.flowId && this.props.panel === nextProps.panel && this.props.query === nextProps.query) {
+        let routerKeys = ['flowId', 'panel', 'query', 'filter', 'highlight']
+        if (deepEquals(_.pick(this.props, routerKeys), _.pick(nextProps, routerKeys), false)){
             // Update redux store with route changes
             if (nextProps.routeParams.flowId !== nextProps.flowId) {
-                this.props.selectFlow(nextProps.routeParams.flowId)
+                nextProps.selectFlow(nextProps.routeParams.flowId)
             }
             if (nextProps.routeParams.flowId && nextProps.routeParams.detailTab !== nextProps.panel) {
-                this.props.setPanel(nextProps.routeParams.detailTab)
+                nextProps.setPanel(nextProps.routeParams.detailTab)
             }
             if (nextProps.location.query[Query.SEARCH] !== nextProps.filter) {
-                this.props.updateFilter(nextProps.location.query[Query.SEARCH], false)
+                nextProps.updateFilter(nextProps.location.query[Query.SEARCH], nextProps.flowList)
             }
             if (nextProps.location.query[Query.HIGHLIGHT] !== nextProps.highlight) {
-                this.props.updateHighlight(nextProps.location.query[Query.HIGHLIGHT], false)
+                nextProps.updateHighlight(nextProps.location.query[Query.HIGHLIGHT], nextProps.flowList)
             }
             return
         }
         if(nextProps.flowId) {
-            this.context.router.replace({ pathname: `/flows/${nextProps.flowId}/${nextProps.panel}` , query: nextProps.query})
+            this.context.router.replace({
+                pathname: `/flows/${nextProps.flowId}/${nextProps.panel}`,
+                query: {
+                    ...nextProps.query,
+                    [Query.SEARCH]: nextProps.filter,
+                    [Query.HIGHLIGHT]: nextProps.highlight
+                }
+            })
         } else {
-            this.context.router.replace({ pathname: '/flows' , query: nextProps.query})
+            this.context.router.replace({
+                pathname: '/flows',
+                query: {
+                    ...nextProps.query,
+                    [Query.SEARCH]: nextProps.filter,
+                    [Query.HIGHLIGHT]: nextProps.highlight
+                }
+            })
         }
     }
 
@@ -77,6 +90,7 @@ class MainView extends Component {
 
 export default connect(
     state => ({
+        flowList: state.flows.list,
         flows: state.flows.views.main.view.data,
         selectedFlow: state.flows.list.byId[state.flows.views.main.selected[0]],
         filter: state.flows.views.main.filter,

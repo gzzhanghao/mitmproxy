@@ -141,10 +141,8 @@ export default function reduce(state = defaultState, action) {
 /**
  * @public
  */
-export function updateFilter(filter) {
-    return (dispatch, getState) => {
-        dispatch({ type: UPDATE_FILTER, filter, list: getState().flows.list })
-    }
+export function updateFilter(filter, list) {
+    return { type: UPDATE_FILTER, filter, list }
 }
 
 /**
@@ -165,9 +163,7 @@ export function updateSort(column, desc) {
  * @public
  */
 export function select(id) {
-    return (dispatch, getState) => {
-        dispatch({ type: SELECT, currentSelection: getState().flows.views.main.selected[0], id })
-    }
+    return { type: SELECT, id }
 }
 
 export function selectRelative(shift, flows, selectedFlow) {

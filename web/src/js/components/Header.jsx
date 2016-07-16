@@ -17,7 +17,7 @@ class Header extends Component {
     }
 
     render() {
-        const { selectedFlow, activeMenu} = this.props
+        const { selectedFlow, activeMenu } = this.props
 
         let entries = [...Header.entries]
         if(selectedFlow)

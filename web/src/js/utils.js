@@ -105,3 +105,16 @@ fetchApi.put = (url, json, options) => fetchApi(
         ...options
     }
 )
+
+export function deepEquals(a, b, precise = true) {
+    if (typeof(a) !== 'object' || typeof(b) !== 'object' || !a || !b) {
+        return precise ? a === b : a == b
+    }
+    let keys = [ ...Object.keys(a), ...Object.keys(b)]
+    for (let k of keys) {
+        if (!deepEquals(a[k], b[k], precise)) {
+            return false
+        }
+    }
+    return true
+}
