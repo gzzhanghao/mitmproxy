@@ -5,12 +5,15 @@ import { connect } from 'react-redux'
 
 import { init as appInit, destruct as appDestruct } from '../ducks/app'
 import { setSelectedInput, openPrompt, setPanelRelative } from '../ducks/ui'
-import { select as selectFlow, selectRelative as selectFlowRelative } from '../ducks/views/main'
+import { select as selectFlow, selectRelative as selectFlowRelative, updateFilter, updateHighlight } from '../ducks/views/main'
+import { setPanel } from '../ducks/ui'
 import * as flowsActions from '../ducks/flows'
 import Header from './Header'
 import EventLog from './EventLog'
 import Footer from './Footer'
-import { Key } from '../utils.js'
+import MainView from './MainView'
+import { Key, deepEquals } from '../utils.js'
+import { Query } from '../actions.js'
 
 class ProxyAppMain extends Component {
 
@@ -22,6 +25,43 @@ class ProxyAppMain extends Component {
         super(props, context)
 
         this.onKeyDown = this.onKeyDown.bind(this)
+    }
+
+    componentWillReceiveProps(nextProps) {
+        let routerKeys = ['flowId', 'panel', 'filter', 'highlight']
+        if (deepEquals(_.pick(this.props, routerKeys), _.pick(nextProps, routerKeys), false)){
+            // Update redux store with route changes
+            if (nextProps.routeParams.flowId !== nextProps.flowId) {
+                nextProps.selectFlow(nextProps.routeParams.flowId)
+            }
+            if (nextProps.routeParams.flowId && nextProps.routeParams.detailTab !== nextProps.panel) {
+                nextProps.setPanel(nextProps.routeParams.detailTab)
+            }
+            if (nextProps.location.query[Query.SEARCH] !== nextProps.filter) {
+                nextProps.updateFilter(nextProps.location.query[Query.SEARCH], nextProps.flowList)
+            }
+            if (nextProps.location.query[Query.HIGHLIGHT] !== nextProps.highlight) {
+                nextProps.updateHighlight(nextProps.location.query[Query.HIGHLIGHT], nextProps.flowList)
+            }
+            return
+        }
+        if(nextProps.flowId) {
+            this.context.router.replace({
+                pathname: `/flows/${nextProps.flowId}/${nextProps.panel}`,
+                query: {
+                    [Query.SEARCH]: nextProps.filter,
+                    [Query.HIGHLIGHT]: nextProps.highlight
+                }
+            })
+        } else {
+            this.context.router.replace({
+                pathname: '/flows',
+                query: {
+                    [Query.SEARCH]: nextProps.filter,
+                    [Query.HIGHLIGHT]: nextProps.highlight
+                }
+            })
+        }
     }
 
     componentWillMount() {
@@ -137,14 +177,11 @@ class ProxyAppMain extends Component {
     }
 
     render() {
-        const { showEventLog, location, children } = this.props
+        const { showEventLog, location, children, panel } = this.props
         return (
             <div id="container" tabIndex="0">
                 <Header ref="header"/>
-                {React.cloneElement(
-                    children,
-                    { ref: 'view', location }
-                )}
+                <MainView location={location} panel={panel} />
                 {showEventLog && (
                     <EventLog key="eventlog"/>
                 )}
@@ -159,17 +196,25 @@ export default connect(
         showEventLog: state.eventLog.visible,
         settings: state.settings.settings,
         selectedFlow: state.flows.list.byId[state.flows.views.main.selected[0]],
+        flowList: state.flows.list,
         flows: state.flows.views.main.view.data,
-        panel: state.ui.panel
+        flowId: state.flows.views.main.selected[0],
+        panel: state.ui.panel,
+        filter: state.flows.views.main.filter,
+        highlight: state.flows.views.main.highlight,
     }),
     {
         appInit,
         appDestruct,
         setSelectedInput,
         selectFlow,
+        updateFilter,
+        updateHighlight,
+        setPanel,
         selectFlowRelative,
         openPrompt,
         setPanelRelative,
+        updateFlow: flowsActions.update,
         clearFlows: flowsActions.clear,
         duplicateFlow: flowsActions.duplicate,
         removeFlow: flowsActions.remove,

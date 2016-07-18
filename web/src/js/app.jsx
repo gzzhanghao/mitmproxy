@@ -6,7 +6,6 @@ import thunk from 'redux-thunk'
 import { Route, Router as ReactRouter, hashHistory, Redirect } from 'react-router'
 
 import ProxyApp from './components/ProxyApp'
-import MainView from './components/MainView'
 import rootReducer from './ducks/index'
 import { add as addLog } from './ducks/eventLog'
 
@@ -34,10 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <Provider store={store}>
             <ReactRouter history={hashHistory}>
                 <Redirect from="/" to="/flows" />
-                <Route path="/" component={ProxyApp}>
-                    <Route path="flows" component={MainView}/>
-                    <Route path="flows/:flowId/:detailTab" component={MainView}/>
-                </Route>
+                <Route path="/flows" component={ProxyApp} />
+                <Route path="/flows/:flowId/:detailTab" component={ProxyApp} />
             </ReactRouter>
         </Provider>,
         document.getElementById("mitmproxy")
