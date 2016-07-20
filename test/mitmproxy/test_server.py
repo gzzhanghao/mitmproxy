@@ -13,8 +13,9 @@ from netlib.http import authentication, http1
 from netlib.tutils import raises
 from pathod import pathoc, pathod
 
+from mitmproxy.builtins import script
 from mitmproxy import controller
-from mitmproxy.proxy.config import HostMatcher
+from mitmproxy.proxy.config import HostMatcher, parse_server_spec
 from mitmproxy.models import Error, HTTPResponse, HTTPFlow
 
 from . import tutils, tservers
@@ -287,20 +288,18 @@ class TestHTTP(tservers.HTTPProxyTest, CommonMixin, AppMixin):
         self.master.set_stream_large_bodies(None)
 
     def test_stream_modify(self):
-        self.master.load_script(tutils.test_data.path("data/scripts/stream_modify.py"))
+        s = script.Script(
+            tutils.test_data.path("data/addonscripts/stream_modify.py")
+        )
+        self.master.addons.add(s)
         d = self.pathod('200:b"foo"')
         assert d.content == b"bar"
-        self.master.unload_scripts()
+        self.master.addons.remove(s)
 
 
 class TestHTTPAuth(tservers.HTTPProxyTest):
-    authenticator = http.authentication.BasicProxyAuth(
-        http.authentication.PassManSingleUser(
-            "test",
-            "test"),
-        "realm")
-
     def test_auth(self):
+        self.master.options.auth_singleuser = "test:test"
         assert self.pathod("202").status_code == 407
         p = self.pathoc()
         ret = p.request("""
@@ -364,15 +363,17 @@ class TestHTTPSUpstreamServerVerificationWTrustedCert(tservers.HTTPProxyTest):
         ])
 
     def test_verification_w_cadir(self):
-        self.config.openssl_verification_mode_server = SSL.VERIFY_PEER
-        self.config.openssl_trusted_cadir_server = tutils.test_data.path(
-            "data/trusted-cadir/")
-
+        self.config.options.update(
+            ssl_verify_upstream_cert = True,
+            ssl_verify_upstream_trusted_cadir = tutils.test_data.path(
+                "data/trusted-cadir/"
+            )
+        )
         self.pathoc()
 
     def test_verification_w_pemfile(self):
         self.config.openssl_verification_mode_server = SSL.VERIFY_PEER
-        self.config.openssl_trusted_ca_server = tutils.test_data.path(
+        self.config.options.ssl_verify_upstream_trusted_ca = tutils.test_data.path(
             "data/trusted-cadir/trusted-ca.pem")
 
         self.pathoc()
@@ -397,23 +398,29 @@ class TestHTTPSUpstreamServerVerificationWBadCert(tservers.HTTPProxyTest):
 
     def test_default_verification_w_bad_cert(self):
         """Should use no verification."""
-        self.config.openssl_trusted_ca_server = tutils.test_data.path(
-            "data/trusted-cadir/trusted-ca.pem")
-
+        self.config.options.update(
+            ssl_verify_upstream_trusted_ca = tutils.test_data.path(
+                "data/trusted-cadir/trusted-ca.pem"
+            )
+        )
         assert self._request().status_code == 242
 
     def test_no_verification_w_bad_cert(self):
-        self.config.openssl_verification_mode_server = SSL.VERIFY_NONE
-        self.config.openssl_trusted_ca_server = tutils.test_data.path(
-            "data/trusted-cadir/trusted-ca.pem")
-
+        self.config.options.update(
+            ssl_verify_upstream_cert = False,
+            ssl_verify_upstream_trusted_ca = tutils.test_data.path(
+                "data/trusted-cadir/trusted-ca.pem"
+            )
+        )
         assert self._request().status_code == 242
 
     def test_verification_w_bad_cert(self):
-        self.config.openssl_verification_mode_server = SSL.VERIFY_PEER
-        self.config.openssl_trusted_ca_server = tutils.test_data.path(
-            "data/trusted-cadir/trusted-ca.pem")
-
+        self.config.options.update(
+            ssl_verify_upstream_cert = True,
+            ssl_verify_upstream_trusted_ca = tutils.test_data.path(
+                "data/trusted-cadir/trusted-ca.pem"
+            )
+        )
         assert self._request().status_code == 502
 
 
@@ -479,10 +486,11 @@ class TestSocks5(tservers.SocksModeTest):
 class TestHttps2Http(tservers.ReverseProxyTest):
 
     @classmethod
-    def get_proxy_config(cls):
-        d = super(TestHttps2Http, cls).get_proxy_config()
-        d["upstream_server"] = ("http", d["upstream_server"][1])
-        return d
+    def get_options(cls):
+        opts = super(TestHttps2Http, cls).get_options()
+        s = parse_server_spec(opts.upstream_server)
+        opts.upstream_server = "http://%s" % s.address
+        return opts
 
     def pathoc(self, ssl, sni=None):
         """
@@ -512,15 +520,15 @@ class TestTransparent(tservers.TransparentProxyTest, CommonMixin, TcpMixin):
     ssl = False
 
     def test_tcp_stream_modify(self):
-        self.master.load_script(tutils.test_data.path("data/scripts/tcp_stream_modify.py"))
-
+        s = script.Script(
+            tutils.test_data.path("data/addonscripts/tcp_stream_modify.py")
+        )
+        self.master.addons.add(s)
         self._tcpproxy_on()
         d = self.pathod('200:b"foo"')
         self._tcpproxy_off()
-
         assert d.content == b"bar"
-
-        self.master.unload_scripts()
+        self.master.addons.remove(s)
 
 
 class TestTransparentSSL(tservers.TransparentProxyTest, CommonMixin, TcpMixin):
@@ -758,8 +766,13 @@ class TestFakeResponse(tservers.HTTPProxyTest):
 
 class TestServerConnect(tservers.HTTPProxyTest):
     masterclass = MasterFakeResponse
-    no_upstream_cert = True
     ssl = True
+
+    @classmethod
+    def get_options(cls):
+        opts = tservers.HTTPProxyTest.get_options()
+        opts.no_upstream_cert = True
+        return opts
 
     def test_unnecessary_serverconnect(self):
         """A replayed/fake response with no_upstream_cert should not connect to an upstream server"""
@@ -835,17 +848,12 @@ class TestUpstreamProxy(tservers.HTTPUpstreamProxyTest, CommonMixin, AppMixin):
     ssl = False
 
     def test_order(self):
-        self.proxy.tmaster.replacehooks.add(
-            "~q",
-            "foo",
-            "bar")  # replace in request
-        self.chain[0].tmaster.replacehooks.add("~q", "bar", "baz")
-        self.chain[1].tmaster.replacehooks.add("~q", "foo", "oh noes!")
-        self.chain[0].tmaster.replacehooks.add(
-            "~s",
-            "baz",
-            "ORLY")  # replace in response
-
+        self.proxy.tmaster.options.replacements = [
+            ("~q", "foo", "bar"),
+            ("~q", "bar", "baz"),
+            ("~q", "foo", "oh noes!"),
+            ("~s", "baz", "ORLY")
+        ]
         p = self.pathoc()
         req = p.request("get:'%s/p/418:b\"foo\"'" % self.server.urlbase)
         assert req.content == b"ORLY"
@@ -1031,20 +1039,34 @@ class AddUpstreamCertsToClientChainMixin:
             if receivedCert.digest('sha256') == upstreamCert.digest('sha256'):
                 upstream_cert_found_in_client_chain = True
                 break
-        assert(upstream_cert_found_in_client_chain == self.add_upstream_certs_to_client_chain)
+        assert(upstream_cert_found_in_client_chain == self.master.options.add_upstream_certs_to_client_chain)
 
 
-class TestHTTPSAddUpstreamCertsToClientChainTrue(AddUpstreamCertsToClientChainMixin, tservers.HTTPProxyTest):
-
+class TestHTTPSAddUpstreamCertsToClientChainTrue(
+    AddUpstreamCertsToClientChainMixin,
+    tservers.HTTPProxyTest
+):
     """
-    If --add-server-certs-to-client-chain is True, then the client should receive the upstream server's certificates
+    If --add-server-certs-to-client-chain is True, then the client should
+    receive the upstream server's certificates
     """
-    add_upstream_certs_to_client_chain = True
+    @classmethod
+    def get_options(cls):
+        opts = super(tservers.HTTPProxyTest, cls).get_options()
+        opts.add_upstream_certs_to_client_chain = True
+        return opts
 
 
-class TestHTTPSAddUpstreamCertsToClientChainFalse(AddUpstreamCertsToClientChainMixin, tservers.HTTPProxyTest):
-
+class TestHTTPSAddUpstreamCertsToClientChainFalse(
+    AddUpstreamCertsToClientChainMixin,
+    tservers.HTTPProxyTest
+):
     """
-    If --add-server-certs-to-client-chain is False, then the client should not receive the upstream server's certificates
+    If --add-server-certs-to-client-chain is False, then the client should not
+    receive the upstream server's certificates
     """
-    add_upstream_certs_to_client_chain = False
+    @classmethod
+    def get_options(cls):
+        opts = super(tservers.HTTPProxyTest, cls).get_options()
+        opts.add_upstream_certs_to_client_chain = False
+        return opts

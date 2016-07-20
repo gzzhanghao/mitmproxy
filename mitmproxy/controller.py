@@ -6,6 +6,8 @@ import contextlib
 
 from six.moves import queue
 
+from mitmproxy import addons
+from mitmproxy import options
 from . import ctx as mitmproxy_ctx
 from netlib import basethread
 from . import exceptions
@@ -31,6 +33,11 @@ Events = frozenset([
     "error",
     "log",
 
+    "start",
+    "configure",
+    "done",
+    "tick",
+
     "script_change",
 ])
 
@@ -40,16 +47,28 @@ class Log(object):
         self.master = master
 
     def __call__(self, text, level="info"):
-        self.master.add_event(text, level)
+        self.master.add_log(text, level)
 
-    # We may want to add .log(), .warn() etc. here at a later point in time
+    def debug(self, txt):
+        self(txt, "debug")
+
+    def info(self, txt):
+        self(txt, "info")
+
+    def warn(self, txt):
+        self(txt, "warn")
+
+    def error(self, txt):
+        self(txt, "error")
 
 
 class Master(object):
     """
         The master handles mitmproxy's main event loop.
     """
-    def __init__(self, *servers):
+    def __init__(self, opts, *servers):
+        self.options = opts or options.Options()
+        self.addons = addons.Addons(self)
         self.event_queue = queue.Queue()
         self.should_exit = threading.Event()
         self.servers = []
@@ -69,6 +88,11 @@ class Master(object):
         finally:
             mitmproxy_ctx.master = None
             mitmproxy_ctx.log = None
+
+    def add_log(self, e, level="info"):
+        """
+            level: debug, info, warn, error
+        """
 
     def add_server(self, server):
         # We give a Channel to the server which can be used to communicate with the master
@@ -93,26 +117,25 @@ class Master(object):
             self.shutdown()
 
     def tick(self, timeout):
+        with self.handlecontext():
+            self.addons("tick")
         changed = False
         try:
-            # This endless loop runs until the 'Queue.Empty'
-            # exception is thrown.
-            while True:
-                mtype, obj = self.event_queue.get(timeout=timeout)
-                if mtype not in Events:
-                    raise exceptions.ControlException("Unknown event %s" % repr(mtype))
-                handle_func = getattr(self, mtype)
-                if not callable(handle_func):
-                    raise exceptions.ControlException("Handler %s not callable" % mtype)
-                if not handle_func.__dict__.get("__handler"):
-                    raise exceptions.ControlException(
-                        "Handler function %s is not decorated with controller.handler" % (
-                            handle_func
-                        )
+            mtype, obj = self.event_queue.get(timeout=timeout)
+            if mtype not in Events:
+                raise exceptions.ControlException("Unknown event %s" % repr(mtype))
+            handle_func = getattr(self, mtype)
+            if not callable(handle_func):
+                raise exceptions.ControlException("Handler %s not callable" % mtype)
+            if not handle_func.__dict__.get("__handler"):
+                raise exceptions.ControlException(
+                    "Handler function %s is not decorated with controller.handler" % (
+                        handle_func
                     )
-                handle_func(obj)
-                self.event_queue.task_done()
-                changed = True
+                )
+            handle_func(obj)
+            self.event_queue.task_done()
+            changed = True
         except queue.Empty:
             pass
         return changed
@@ -121,6 +144,7 @@ class Master(object):
         for server in self.servers:
             server.shutdown()
         self.should_exit.set()
+        self.addons.done()
 
 
 class ServerThread(basethread.BaseThread):
@@ -191,9 +215,17 @@ def handler(f):
 
         with master.handlecontext():
             ret = f(master, message)
+            if handling:
+                master.addons(f.__name__, message)
 
         if handling and not message.reply.acked and not message.reply.taken:
             message.reply.ack()
+
+        # Reset the handled flag - it's common for us to feed the same object
+        # through handlers repeatedly, so we don't want this to persist across
+        # calls.
+        if message.reply.handled:
+            message.reply.handled = False
         return ret
     # Mark this function as a handler wrapper
     wrapper.__dict__["__handler"] = True
