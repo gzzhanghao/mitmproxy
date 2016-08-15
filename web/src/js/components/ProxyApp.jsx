@@ -1,6 +1,6 @@
 import React, { Component, PropTypes } from 'react'
 import { connect } from 'react-redux'
-import { createHashHistory } from 'history'
+import { createHashHistory, useQueries } from 'history'
 
 import { init as appInit, destruct as appDestruct } from '../ducks/app'
 import { onKeyDown } from '../ducks/ui/keyboard'
@@ -52,7 +52,7 @@ class ProxyAppMain extends Component {
 
     componentWillMount() {
         this.props.appInit()
-        this.history = createHashHistory()
+        this.history = useQueries(createHashHistory)()
         this.unlisten = this.history.listen(location => this.flushToStore(location))
         window.addEventListener('keydown', this.props.onKeyDown);
     }
