@@ -16,7 +16,9 @@ import Footer from './Footer'
 class ProxyAppMain extends Component {
 
     flushToStore(location) {
-        const components = location.pathname.split('/')
+        const components = location.pathname.split('/').filter(v => v)
+
+        let query = location.query || {};
 
         if (components.length > 2) {
             this.props.selectFlow(components[1])
@@ -26,8 +28,8 @@ class ProxyAppMain extends Component {
             this.props.selectTab(null)
         }
 
-        this.props.updateFilter(location.query[Query.SEARCH])
-        this.props.updateHighlight(location.query[Query.HIGHLIGHT])
+        this.props.updateFilter(query[Query.SEARCH])
+        this.props.updateHighlight(query[Query.HIGHLIGHT])
     }
 
     flushToHistory(props) {
