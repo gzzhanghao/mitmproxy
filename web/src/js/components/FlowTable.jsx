@@ -101,13 +101,16 @@ class FlowTable extends React.Component {
                     <tbody>
                         <tr style={{ height: vScroll.paddingTop }}></tr>
                         {flows.slice(vScroll.start, vScroll.end).map(flow => (
-                            <FlowRow
-                                key={flow.id}
-                                flow={flow}
-                                selected={flow === selected}
-                                highlighted={isHighlighted(flow)}
-                                onSelect={this.props.onSelect}
-                            />
+                            <tr>
+                                <FlowRow
+                                    key={flow.id}
+                                    flow={flow}
+                                    selected={flow === selected}
+                                    highlighted={isHighlighted(flow)}
+                                    onSelect={this.props.onSelect}
+                                />
+                                <ContextMenu />
+                            </tr>
                         ))}
                         <tr style={{ height: vScroll.paddingBottom }}></tr>
                     </tbody>
