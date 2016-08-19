@@ -4,6 +4,7 @@ import shallowEqual from 'shallowequal'
 import AutoScroll from './helpers/AutoScroll'
 import { calcVScroll } from './helpers/VirtualScroll'
 import FlowTableHead from './FlowTable/FlowTableHead'
+import FlowContextMenu from './FlowTable/FlowContextMenu'
 import FlowRow from './FlowTable/FlowRow'
 import Filt from "../filt/filt"
 
@@ -101,20 +102,23 @@ class FlowTable extends React.Component {
                     <tbody>
                         <tr style={{ height: vScroll.paddingTop }}></tr>
                         {flows.slice(vScroll.start, vScroll.end).map(flow => (
-                            <tr>
-                                <FlowRow
-                                    key={flow.id}
-                                    flow={flow}
-                                    selected={flow === selected}
-                                    highlighted={isHighlighted(flow)}
-                                    onSelect={this.props.onSelect}
-                                />
-                                <ContextMenu />
-                            </tr>
+                            <FlowRow
+                                key={flow.id}
+                                flow={flow}
+                                selected={flow === selected}
+                                highlighted={isHighlighted(flow)}
+                                onSelect={this.props.onSelect}
+                            />
                         ))}
                         <tr style={{ height: vScroll.paddingBottom }}></tr>
                     </tbody>
                 </table>
+                {flows.slice(vScroll.start, vScroll.end).map(flow => (
+                    <FlowContextMenu
+                        key={flow.id}
+                        flow={flow}
+                    />
+                ))}
             </div>
         )
     }

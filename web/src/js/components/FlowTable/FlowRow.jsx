@@ -2,7 +2,7 @@ import React, { PropTypes } from 'react'
 import classnames from 'classnames'
 import columns from './FlowColumns'
 import { pure } from '../../utils'
-import { ContextMenu, MenuItem, ContextMenuLayer } from 'react-contextmenu'
+import { ContextMenuLayer } from 'react-contextmenu'
 
 FlowRow.propTypes = {
     onSelect: PropTypes.func.isRequired,
@@ -20,9 +20,7 @@ function FlowRow({ flow, selected, highlighted, onSelect }) {
         'has-response': flow.response,
     })
 
-    const ContextMenuLayerContainer = ContextMenuLayer(flow.id)(() => (
-        <div>Helloworld</div>
-    ))
+
 
     const FlowContextMenu = () => (
         <ContextMenu identifier={flow.id}>
@@ -36,13 +34,9 @@ function FlowRow({ flow, selected, highlighted, onSelect }) {
 
     return (
         <tr className={className} onClick={() => onSelect(flow.id)}>
-            {columns.map(Column => (
-                <Column key={Column.name} flow={flow}/>
-            ))}
-            <td>
-                <ContextMenuLayerContainer />
-                <FlowContextMenu />
-            </td>
+        {columns.map(Column => (
+            <Column key={Column.name} flow={flow} identifier={`context-menu-${flow.id}`}/>
+        ))}
         </tr>
     )
 }

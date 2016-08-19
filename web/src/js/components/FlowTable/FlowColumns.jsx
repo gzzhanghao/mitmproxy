@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import { ContextMenuLayer } from 'react-contextmenu'
 import classnames from 'classnames'
 import { RequestUtils, ResponseUtils } from '../../flow/utils.js'
 import { formatSize, formatTimeDelta } from '../../utils.js'
@@ -12,11 +13,12 @@ export function TLSColumn({ flow }) {
 TLSColumn.headerClass = 'col-tls'
 TLSColumn.headerName = ''
 
-export function IconColumn({ flow }) {
+export function IconColumn({ flow, identifier }) {
+    const Layer = ContextMenuLayer(identifier)(() => (
+        <div className={classnames('resource-icon', IconColumn.getIcon(flow))}></div>
+    ))
     return (
-        <td className="col-icon">
-            <div className={classnames('resource-icon', IconColumn.getIcon(flow))}></div>
-        </td>
+        <Layer renderTag='td' className='col-icon' />
     )
 }
 
@@ -53,9 +55,9 @@ IconColumn.getIcon = flow => {
     return 'resource-icon-plain'
 }
 
-export function PathColumn({ flow }) {
-    return (
-        <td className="col-path">
+export function PathColumn({ flow, identifier }) {
+    const Layer = ContextMenuLayer(identifier)(() => (
+        <div>
             {flow.request.is_replay && (
                 <i className="fa fa-fw fa-repeat pull-right"></i>
             )}
@@ -63,34 +65,53 @@ export function PathColumn({ flow }) {
                 <i className="fa fa-fw fa-pause pull-right"></i>
             )}
             {RequestUtils.pretty_url(flow.request)}
-        </td>
+        </div>
+    ))
+
+    return (
+        <Layer renderTag='td' className='col-path' />
     )
 }
 
 PathColumn.headerClass = 'col-path'
 PathColumn.headerName = 'Path'
 
-export function MethodColumn({ flow }) {
+export function MethodColumn({ flow, identifier }) {
+    const Layer = ContextMenuLayer(identifier)(() => (
+        <div>
+            {flow.request.method}
+        </div>
+    ))
     return (
-        <td className="col-method">{flow.request.method}</td>
+        <Layer renderTag='td' className='col-method' />
     )
 }
 
 MethodColumn.headerClass = 'col-method'
 MethodColumn.headerName = 'Method'
 
-export function StatusColumn({ flow }) {
+export function StatusColumn({ flow, identifier }) {
+    const Layer = ContextMenuLayer(identifier)(() => (
+        <div>
+            {flow.response && flow.response.status_code}
+        </div>
+    ))
     return (
-        <td className="col-status">{flow.response && flow.response.status_code}</td>
+        <Layer renderTag='td' className='col-status' />
     )
 }
 
 StatusColumn.headerClass = 'col-status'
 StatusColumn.headerName = 'Status'
 
-export function SizeColumn({ flow }) {
+export function SizeColumn({ flow, identifier}) {
+    const Layer = ContextMenuLayer(identifier)(() => (
+        <div>
+            {formatSize(SizeColumn.getTotalSize(flow))}
+        </div>
+    ))
     return (
-        <td className="col-size">{formatSize(SizeColumn.getTotalSize(flow))}</td>
+        <Layer renderTag='td' className='col-size' />
     )
 }
 
@@ -105,15 +126,18 @@ SizeColumn.getTotalSize = flow => {
 SizeColumn.headerClass = 'col-size'
 SizeColumn.headerName = 'Size'
 
-export function TimeColumn({ flow }) {
-    return (
-        <td className="col-time">
+export function TimeColumn({ flow, identifier }) {
+    const Layer = ContextMenuLayer(identifier)(() => (
+        <div>
             {flow.response ? (
                 formatTimeDelta(1000 * (flow.response.timestamp_end - flow.request.timestamp_start))
             ) : (
                 '...'
             )}
-        </td>
+        </div>
+    ))
+    return (
+        <Layer renderTag='td' className='col-time' />
     )
 }
 
